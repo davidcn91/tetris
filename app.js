@@ -1,6 +1,7 @@
 class Game {
   constructor() {
     this.board = new Board;
+    this.pieces = [];
     this.lost = false;
     this.linesCleared = 0;
   }
@@ -32,16 +33,24 @@ class Piece {
     this.squares = [new Square(true, true),new Square(true, true),new Square(true, true),new Square(true, true)];
     this.type = Math.floor(Math.random()*7);
     this.color = ['red','orange','yellow','green','blue','purple','lightblue'][this.type];
+    this.orient = "up";
     this.combos = [[[0,3],[0,4],[1,4],[1,5]],[[1,3],[1,4],[0,5],[1,5]],
     [[0,4],[0,5],[1,4],[1,5]],[[1,3],[0,4],[1,4],[0,5]],[[0,3],[1,3],[1,4],[1,5]],
     [[1,3],[0,4],[1,4],[1,5]],[[0,3],[0,4],[0,5],[0,6]]];
+    this.directions = ["up", "right", "down", "left"];
   }
 }
+
+Piece.prototype = {
+  directions: ["up", "right", "down", "left"],
+  combos: [[[0,3],[0,4],[1,4],[1,5]],[[1,3],[1,4],[0,5],[1,5]],
+  [[0,4],[0,5],[1,4],[1,5]],[[1,3],[0,4],[1,4],[0,5]],[[0,3],[1,3],[1,4],[1,5]],
+  [[1,3],[0,4],[1,4],[1,5]],[[0,3],[0,4],[0,5],[0,6]]]
+};
 
 var game = new Game();
 
 $(document).ready(function() {
-  // $('.score h3').append('<span>' + game.linesCleared + '</span>');
   for (var i = 0; i < game.board.grid.length; i++) {
     for (var j = 0; j < game.board.grid[i].length; j++) {
       if (game.board.grid[i][j].filled) {
@@ -53,7 +62,9 @@ $(document).ready(function() {
     $('.board').append("<br />");
   }
   createNewPiece();
-
+  $(document).on("tap", function() {
+    rotate();
+  })
   $(document).keydown(function(key) {
     if (key.which == 37) {
       var activeCells = moveSideActiveCells(game.board);
@@ -93,6 +104,8 @@ $(document).ready(function() {
       }
     } else if (key.which == 40) {
       moveDown();
+    } else if (key.which == 38) {
+      rotate();
     }
   });
 
@@ -106,7 +119,7 @@ function moveDown() {
 
   if (pieceDone(game.board, activeCells)) {
     lineFull();
-    var piece = createNewPiece();
+    createNewPiece();
   } else {
     var color = $('.active').attr("color");
     $('.active').removeAttr("color");
@@ -138,6 +151,7 @@ function findActiveCells(board) {
 
 function createNewPiece() {
   var piece = new Piece();
+  game.pieces.push(piece);
   for (var i = 0; i < piece.squares.length; i++) {
     if (game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]].filled) {
       break;
@@ -145,7 +159,6 @@ function createNewPiece() {
       game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]] = piece.squares[i]
       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).addClass("filled active");
       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).attr("color", piece.color);
-
     }
   }
   return piece;
@@ -207,6 +220,7 @@ function lineFull() {
 
 function lineClear(row) {
   game.linesCleared ++;
+  $('.score').text('Score: ' + game.linesCleared);
   for (var i = row; i >= 0; i--) {
     for (var j = 0; j < game.board.grid[i].length; j++) {
       if (i > 0) {
@@ -223,5 +237,437 @@ function lineClear(row) {
         $('.square.r'+i+'.c'+j).removeAttr("color");
       }
     }
+  }
+}
+
+function rotate() {
+  var color = $('.active').attr("color");
+  var orient = game.pieces[(game.pieces.length)-1].orient;
+  if (color == "yellow") {
+    return;
+  }
+  var activeCells = [];
+  for (var i = 0; i < game.board.grid.length; i++) {
+    for (var j = 0; j < game.board.grid[i].length; j++) {
+      if (game.board.grid[i][j].active) {
+        game.board.grid[i][j].active = false;
+        game.board.grid[i][j].filled = false;
+        activeCells.push([i,j]);
+      }
+    }
+  }
+  $('.active').removeAttr("color");
+  $('.active').removeClass("filled");
+  $('.active').removeClass("active");
+
+  if (color == "purple") {
+    if (orient == "up") {
+      rotatePurpleCells([0,2,3],2,"vertical",1,"up",activeCells);
+    } else if (orient == "right") {
+      rotatePurpleCells([1,2,3],1,"horizontal",-1,"right",activeCells);
+    } else if (orient == "down") {
+      rotatePurpleCells([0,1,3],1,"vertical",-1,"down",activeCells);
+    } else if (orient == "left") {
+      rotatePurpleCells([0,1,2],2,"horizontal",1,"left",activeCells);
+    }
+  } else if (color == "red") {
+    if (orient == "up") {
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).attr("color", "red");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).attr("color", "red");
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).attr("color", "red");
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).attr("color", "red");
+      game.pieces[game.pieces.length-1].orient = "right";
+    } else if (orient == "right") {
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).attr("color", "red");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).attr("color", "red");
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).attr("color", "red");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-2].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-2].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-2)).attr("color", "red");
+      game.pieces[game.pieces.length-1].orient = "down";
+    } else if (orient == "down") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).attr("color", "red");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).attr("color", "red");
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).attr("color", "red");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).attr("color", "red");
+      game.pieces[game.pieces.length-1].orient = "left";
+    } else if (orient == "left") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).attr("color", "red");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).attr("color", "red");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+2].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+2].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+2)).attr("color", "red");
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).attr("color", "red");
+      game.pieces[game.pieces.length-1].orient = "up";
+    }
+  } else if (color == "green") {
+    if (orient == "up") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).attr("color", "green");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).attr("color", "green");
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).attr("color", "green");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]+2].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]+2].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]+2)).attr("color", "green");
+      game.pieces[game.pieces.length-1].orient = "right";
+    } else if (orient == "right") {
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).attr("color", "green");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).attr("color", "green");
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).attr("color", "green");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).attr("color", "green");
+      game.pieces[game.pieces.length-1].orient = "down";
+    } else if (orient == "down") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+activeCells[0][1]).attr("color", "green");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+activeCells[3][1]).attr("color", "green");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]-2].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]-2].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]-2)).attr("color", "green");
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).attr("color", "green");
+      game.pieces[game.pieces.length-1].orient = "left";
+    } else if (orient == "left") {
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+activeCells[1][1]).attr("color", "green");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+activeCells[2][1]).attr("color", "green");
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).attr("color", "green");
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).attr("color", "green");
+      game.pieces[game.pieces.length-1].orient = "up";
+    }
+  } else if (color == "orange") {
+    if (orient == "up") {
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].active = true;
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]].filled = true;
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1])).attr("color", "orange");
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]+1].active = true;
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]+1].filled = true;
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1]+1)).attr("color", "orange");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).attr("color", "orange");
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-1)).attr("color", "orange");
+      game.pieces[game.pieces.length-1].orient = "right";
+    } else if (orient == "right") {
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).attr("color", "orange");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).attr("color", "orange");
+      game.board.grid[activeCells[2][0]-1][activeCells[2][1]-1].active = true;
+      game.board.grid[activeCells[2][0]-1][activeCells[2][1]-1].filled = true;
+      $('.square.r'+(activeCells[2][0]-1)+'.c'+(activeCells[2][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]-1)+'.c'+(activeCells[2][1]-1)).attr("color", "orange");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).attr("color", "orange");
+      game.pieces[game.pieces.length-1].orient = "down";
+    } else if (orient == "down") {
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+1)).attr("color", "orange");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).attr("color", "orange");
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]-1].active = true;
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]-1].filled = true;
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1]-1)).attr("color", "orange");
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].active = true;
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]].filled = true;
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1])).attr("color", "orange");
+      game.pieces[game.pieces.length-1].orient = "left";
+    } else if (orient == "left") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).attr("color", "orange");
+      game.board.grid[activeCells[1][0]+1][activeCells[1][1]+1].active = true;
+      game.board.grid[activeCells[1][0]+1][activeCells[1][1]+1].filled = true;
+      $('.square.r'+(activeCells[1][0]+1)+'.c'+(activeCells[1][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]+1)+'.c'+(activeCells[1][1]+1)).attr("color", "orange");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).attr("color", "orange");
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).attr("color", "orange");
+      game.pieces[game.pieces.length-1].orient = "up";
+    }
+  } else if (color == "blue") {
+    if (orient == "up") {
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0])+'.c'+(activeCells[0][1]+2)).attr("color", "blue");
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]+1].active = true;
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]+1].filled = true;
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1]+1)).attr("color", "blue");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).attr("color", "blue");
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-1)).attr("color", "blue");
+      game.pieces[game.pieces.length-1].orient = "right";
+    } else if (orient == "right") {
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).attr("color", "blue");
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]+2][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]+2)+'.c'+(activeCells[1][1])).attr("color", "blue");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1])).attr("color", "blue");
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).attr("color", "blue");
+      game.pieces[game.pieces.length-1].orient = "down";
+    } else if (orient == "down") {
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+1)).attr("color", "blue");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).attr("color", "blue");
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]-1].active = true;
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]-1].filled = true;
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1]-1)).attr("color", "blue");
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0])+'.c'+(activeCells[3][1]-2)).attr("color", "blue");
+      game.pieces[game.pieces.length-1].orient = "left";
+    } else if (orient == "left") {
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+1)).attr("color", "blue");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1])).attr("color", "blue");
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]-2][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]-2)+'.c'+(activeCells[2][1])).attr("color", "blue");
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-1)).attr("color", "blue");
+      game.pieces[game.pieces.length-1].orient = "up";
+    }
+  } else if (color == "lightblue") {
+    if (orient == "up") {
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]-1][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]-1)+'.c'+(activeCells[0][1]+2)).attr("color", "lightblue");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+1].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+1].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+1)).attr("color", "lightblue");
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]+1][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]+1)+'.c'+(activeCells[2][1])).attr("color", "lightblue");
+      game.board.grid[activeCells[3][0]+2][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]+2][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]+2)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]+2)+'.c'+(activeCells[3][1]-1)).attr("color", "lightblue");
+      game.pieces[game.pieces.length-1].orient = "right";
+    } else if (orient == "right") {
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]+2][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+2)+'.c'+(activeCells[0][1]+1)).attr("color", "lightblue");
+      game.board.grid[activeCells[1][0]+1][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]+1][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0]+1)+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]+1)+'.c'+(activeCells[1][1])).attr("color", "lightblue");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-1].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-1].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-1)).attr("color", "lightblue");
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]-1][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-1)+'.c'+(activeCells[3][1]-2)).attr("color", "lightblue");
+      game.pieces[game.pieces.length-1].orient = "down";
+    } else if (orient == "down") {
+      game.board.grid[activeCells[0][0]-2][activeCells[0][1]+1].active = true;
+      game.board.grid[activeCells[0][0]-2][activeCells[0][1]+1].filled = true;
+      $('.square.r'+(activeCells[0][0]-2)+'.c'+(activeCells[0][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]-2)+'.c'+(activeCells[0][1]+1)).attr("color", "lightblue");
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]].active = true;
+      game.board.grid[activeCells[1][0]-1][activeCells[1][1]].filled = true;
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1])).addClass("filled active");
+      $('.square.r'+(activeCells[1][0]-1)+'.c'+(activeCells[1][1])).attr("color", "lightblue");
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-1].active = true;
+      game.board.grid[activeCells[2][0]][activeCells[2][1]-1].filled = true;
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[2][0])+'.c'+(activeCells[2][1]-1)).attr("color", "lightblue");
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-2].active = true;
+      game.board.grid[activeCells[3][0]+1][activeCells[3][1]-2].filled = true;
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-2)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]+1)+'.c'+(activeCells[3][1]-2)).attr("color", "lightblue");
+      game.pieces[game.pieces.length-1].orient = "left";
+    } else if (orient == "left") {
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+2].active = true;
+      game.board.grid[activeCells[0][0]+1][activeCells[0][1]+2].filled = true;
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+2)).addClass("filled active");
+      $('.square.r'+(activeCells[0][0]+1)+'.c'+(activeCells[0][1]+2)).attr("color", "lightblue");
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+1].active = true;
+      game.board.grid[activeCells[1][0]][activeCells[1][1]+1].filled = true;
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+1)).addClass("filled active");
+      $('.square.r'+(activeCells[1][0])+'.c'+(activeCells[1][1]+1)).attr("color", "lightblue");
+      game.board.grid[activeCells[2][0]-1][activeCells[2][1]].active = true;
+      game.board.grid[activeCells[2][0]-1][activeCells[2][1]].filled = true;
+      $('.square.r'+(activeCells[2][0]-1)+'.c'+(activeCells[2][1])).addClass("filled active");
+      $('.square.r'+(activeCells[2][0]-1)+'.c'+(activeCells[2][1])).attr("color", "lightblue");
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]-1].active = true;
+      game.board.grid[activeCells[3][0]-2][activeCells[3][1]-1].filled = true;
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1]-1)).addClass("filled active");
+      $('.square.r'+(activeCells[3][0]-2)+'.c'+(activeCells[3][1]-1)).attr("color", "lightblue");
+      game.pieces[game.pieces.length-1].orient = "up";
+    }
+  }
+}
+
+function rotatePurpleCells(unchangedCells,four,direction,change,orient,activeCells) {
+  for (var i = 0; i < unchangedCells.length; i++) {
+    game.board.grid[activeCells[unchangedCells[i]][0]][activeCells[unchangedCells[i]][1]].active = true;
+    game.board.grid[activeCells[unchangedCells[i]][0]][activeCells[unchangedCells[i]][1]].filled = true;
+    $('.square.r'+(activeCells[unchangedCells[i]][0])+'.c'+activeCells[unchangedCells[i]][1]).addClass("filled active");
+    $('.square.r'+(activeCells[unchangedCells[i]][0])+'.c'+activeCells[unchangedCells[i]][1]).attr("color", "purple");
+  }
+  if (direction == "vertical") {
+    game.board.grid[activeCells[four][0]+change][activeCells[four][1]].active = true;
+    game.board.grid[activeCells[four][0]+change][activeCells[four][1]].filled = true;
+    $('.square.r'+(activeCells[four][0]+change)+'.c'+(activeCells[four][1])).addClass("filled active");
+    $('.square.r'+(activeCells[four][0]+change)+'.c'+(activeCells[four][1])).attr("color", "purple");
+  } else if (direction == "horizontal") {
+    game.board.grid[activeCells[four][0]][activeCells[four][1]+change].active = true;
+    game.board.grid[activeCells[four][0]][activeCells[four][1]+change].filled = true;
+    $('.square.r'+(activeCells[four][0])+'.c'+(activeCells[four][1]+change)).addClass("filled active");
+    $('.square.r'+(activeCells[four][0])+'.c'+(activeCells[four][1]+change)).attr("color", "purple");
+  }
+  if (orient == "up") {
+    game.pieces[game.pieces.length-1].orient = "right";
+  } else if (orient == "right") {
+    game.pieces[game.pieces.length-1].orient = "down";
+  } else if (orient == "down") {
+    game.pieces[game.pieces.length-1].orient = "left";
+  } else if (orient == "left") {
+    game.pieces[game.pieces.length-1].orient = "up";
   }
 }
