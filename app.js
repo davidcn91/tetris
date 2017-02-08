@@ -62,7 +62,7 @@ $(document).ready(function() {
     $('.board').append("<br />");
   }
   createNewPiece();
-  $(document).on("tap", function() {
+  $("div").on("tap", function() {
     rotate();
   })
   $(document).keydown(function(key) {
