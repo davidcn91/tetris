@@ -64,7 +64,7 @@ $(document).ready(function() {
   createNewPiece();
   $("div").on("tap", function() {
     rotate();
-  })
+  });
   $(document).keydown(function(key) {
     if (key.which == 37) {
       var activeCells = moveSideActiveCells(game.board);
