@@ -740,18 +740,3 @@ function store() {
     }
   }
 }
-
-// function createNewPiece() {
-//   var piece = new Piece();
-//   game.pieces.push(piece);
-//   for (var i = 0; i < piece.squares.length; i++) {
-//     if (game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]].filled) {
-//       break;
-//     } else {
-//       game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]] = piece.squares[i]
-//       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).addClass("filled active");
-//       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).attr("color", piece.color);
-//     }
-//   }
-//   return piece;
-// }
