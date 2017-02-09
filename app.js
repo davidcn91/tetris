@@ -4,6 +4,8 @@ class Game {
     this.pieces = [];
     this.lost = false;
     this.linesCleared = 0;
+    this.stored = [];
+    this.switches = 0;
   }
 }
 
@@ -29,9 +31,9 @@ class Square {
 }
 
 class Piece {
-  constructor() {
+  constructor(type = Math.floor(Math.random()*7)) {
     this.squares = [new Square(true, true),new Square(true, true),new Square(true, true),new Square(true, true)];
-    this.type = Math.floor(Math.random()*7);
+    this.type = type;
     this.color = ['red','orange','yellow','green','blue','purple','lightblue'][this.type];
     this.orient = "up";
     this.combos = [[[0,3],[0,4],[1,4],[1,5]],[[1,3],[1,4],[0,5],[1,5]],
@@ -108,6 +110,8 @@ $(document).ready(function() {
       rotate();
     } else if (key.which == 32) {
       lock();
+    } else if (key.which == 16) {
+      store();
     }
   });
 
@@ -117,7 +121,7 @@ $(document).ready(function() {
 });
 
 function moveDown() {
-  var activeCells = findActiveCells(game.board);
+  var activeCells = findActiveCells();
 
   if (pieceDone(game.board, activeCells)) {
     lineFull();
@@ -137,13 +141,13 @@ function moveDown() {
 }
 
 
-function findActiveCells(board) {
+function findActiveCells() {
   var activeCells = [];
-  for (var i = 0; i < board.grid.length; i++) {
-    for (var j = 0; j < board.grid[i].length; j++) {
-      if (board.grid[i][j].active) {
-        board.grid[i][j].active = false;
-        board.grid[i][j].filled = false;
+  for (var i = 0; i < game.board.grid.length; i++) {
+    for (var j = 0; j < game.board.grid[i].length; j++) {
+      if (game.board.grid[i][j].active) {
+        game.board.grid[i][j].active = false;
+        game.board.grid[i][j].filled = false;
         activeCells.push([i,j]);
       }
     }
@@ -171,6 +175,7 @@ function pieceDone(board, activeCells) {
   for (var i = 0; i < activeCells.length; i++) {
     if (((activeCells[i][0]+1) > 19) || (!board.grid[activeCells[i][0]+1][activeCells[i][1]].active && board.grid[activeCells[i][0]+1][activeCells[i][1]].filled)) {
       pieceDone = true;
+      game.switches = 0;
     }
     if (pieceDone) {
       for (var i = 0; i < activeCells.length; i++) {
@@ -677,7 +682,7 @@ function rotatePurpleCells(unchangedCells,four,direction,change,orient,activeCel
 
 
 function lock() {
-  var activeCells = findActiveCells(game.board);
+  var activeCells = findActiveCells();
   var moves = 19;
   for (var i = 0; i < activeCells.length; i++) {
     var spaces = 0;
@@ -702,4 +707,51 @@ function lock() {
   }
   lineFull();
   createNewPiece();
+  game.switches = 0;
 }
+
+function store() {
+  if (game.switches == 0) {
+    var activeCells = findActiveCells();
+    if (game.stored.length == 0) {
+      $('.active').removeAttr("color");
+      $('.active').removeClass("filled");
+      $('.active').removeClass("active");
+      game.stored.push(game.pieces.pop());
+      createNewPiece();
+      game.switches ++;
+    } else if (game.stored.length == 1) {
+      var piece = new Piece(game.stored.pop().type);
+      game.stored.push(game.pieces.pop());
+      game.pieces.push(piece);
+      $('.active').removeAttr("color");
+      $('.active').removeClass("filled");
+      $('.active').removeClass("active");
+      for (var i = 0; i < piece.squares.length; i++) {
+        if (game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]].filled) {
+          break;
+        } else {
+          game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]] = piece.squares[i]
+          $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).addClass("filled active");
+          $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).attr("color", piece.color);
+        }
+      }
+      game.switches ++;
+    }
+  }
+}
+
+// function createNewPiece() {
+//   var piece = new Piece();
+//   game.pieces.push(piece);
+//   for (var i = 0; i < piece.squares.length; i++) {
+//     if (game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]].filled) {
+//       break;
+//     } else {
+//       game.board.grid[piece.combos[piece.type][i][0]][piece.combos[piece.type][i][1]] = piece.squares[i]
+//       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).addClass("filled active");
+//       $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).attr("color", piece.color);
+//     }
+//   }
+//   return piece;
+// }
