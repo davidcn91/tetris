@@ -36,7 +36,7 @@ class Piece {
     this.orient = "up";
     this.combos = [[[0,3],[0,4],[1,4],[1,5]],[[1,3],[1,4],[0,5],[1,5]],
     [[0,4],[0,5],[1,4],[1,5]],[[1,3],[0,4],[1,4],[0,5]],[[0,3],[1,3],[1,4],[1,5]],
-    [[1,3],[0,4],[1,4],[1,5]],[[0,3],[0,4],[0,5],[0,6]]];
+    [[1,3],[0,4],[1,4],[1,5]],[[1,3],[1,4],[1,5],[1,6]]];
     this.directions = ["up", "right", "down", "left"];
   }
 }
@@ -106,6 +106,8 @@ $(document).ready(function() {
       moveDown();
     } else if (key.which == 38) {
       rotate();
+    } else if (key.which == 32) {
+      lock();
     }
   });
 
@@ -670,4 +672,34 @@ function rotatePurpleCells(unchangedCells,four,direction,change,orient,activeCel
   } else if (orient == "left") {
     game.pieces[game.pieces.length-1].orient = "up";
   }
+}
+
+
+
+function lock() {
+  var activeCells = findActiveCells(game.board);
+  var moves = 19;
+  for (var i = 0; i < activeCells.length; i++) {
+    var spaces = 0;
+    var row = activeCells[i][0] + 1;
+    var col = activeCells[i][1];
+    while ((row < 20) && !game.board.grid[row][col].filled) {
+      spaces ++;
+      row ++;
+    }
+    if (spaces < moves) {
+      moves = spaces;
+    }
+  }
+  var color = $('.active').attr("color");
+  $('.active').removeAttr("color");
+  $('.active').removeClass("filled");
+  $('.active').removeClass("active");
+  for (var i = 0; i < activeCells.length; i++) {
+    game.board.grid[activeCells[i][0]+moves][activeCells[i][1]].filled = true;
+    $('.square.r'+(activeCells[i][0]+moves)+'.c'+activeCells[i][1]).addClass("filled");
+    $('.square.r'+(activeCells[i][0]+moves)+'.c'+activeCells[i][1]).attr("color", color);
+  }
+  lineFull();
+  createNewPiece();
 }
