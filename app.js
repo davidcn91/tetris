@@ -63,6 +63,12 @@ $(document).ready(function() {
     }
     $('.board').append("<br />");
   }
+  for (var i = 0; i < 3; i++) {
+    for (var j = 0; j < 4; j++) {
+      $('.stored').append('<div class="store r'+i+' c'+j+'"></div>');
+    }
+    $('.stored').append("<br />");
+  }
   createNewPiece();
   $("h1").on("tap", function() {
     rotate();
@@ -736,7 +742,14 @@ function store() {
           $('.square.r'+(piece.combos[piece.type][i][0])+'.c'+(piece.combos[piece.type][i][1])).attr("color", piece.color);
         }
       }
-      game.switches ++;
+    }
+    game.switches ++;
+    var storedSpaces = game.stored[0].combos[game.stored[0].type];
+    $('.store').removeAttr("color");
+    $('.store').removeClass("filled");
+    for (var i = 0; i < storedSpaces.length; i++) {
+      $('.store.r'+(storedSpaces[i][0])+'.c'+(storedSpaces[i][1]-3)).addClass("filled");
+      $('.store.r'+(storedSpaces[i][0])+'.c'+(storedSpaces[i][1]-3)).attr("color", game.stored[0].color);
     }
   }
 }

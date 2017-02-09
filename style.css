@@ -2,8 +2,39 @@ body {
   background-color: blue;
 }
 
+.Row {
+  display: table;
+  width: 100%;
+}
+
+.Column {
+  display: table-cell;
+}
+
 .board {
   align: center;
+  width: 50%;
+}
+
+.stored {
+  width: 25%;
+  display: inline;
+}
+
+.blank {
+  width: 25%;
+}
+
+.store {
+  background-color: white;
+  width: 15px;
+  height: 15px;
+  display: inline-block;
+  border-style: solid;
+  border-width: 1px;
+  border-color: gray;
+  margin-top: -2px;
+  margin-bottom: -2px;
 }
 
 .square {
